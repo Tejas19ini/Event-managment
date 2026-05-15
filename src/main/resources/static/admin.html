@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Admin Dashboard</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="flex h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 overflow-hidden">
+
+<!-- Background blobs -->
+<div class="absolute w-72 h-72 bg-white/20 rounded-full blur-3xl top-10 left-10 animate-pulse"></div>
+<div class="absolute w-96 h-96 bg-pink-300/20 rounded-full blur-3xl bottom-10 right-10 animate-pulse"></div>
+<div class="absolute w-80 h-80 bg-blue-300/20 rounded-full blur-3xl top-1/2 left-1/3 animate-pulse"></div>
+
+<!-- 🔵 Sidebar -->
+<div class="w-64 bg-black/40 backdrop-blur-xl text-white p-5 shadow-2xl">
+    <h2 class="text-2xl font-bold mb-6">Admin</h2>
+
+    <ul>
+        <li class="mb-4 cursor-pointer hover:text-blue-400" onclick="loadUsers()">Users</li>
+        <li class="mb-4 cursor-pointer hover:text-blue-400" onclick="loadEvents()">Events</li>
+        <li class="mb-4 cursor-pointer hover:text-blue-400" onclick="loadColleges()">Colleges</li>
+        <li class="mb-4 cursor-pointer hover:text-blue-400" onclick="loadRegistrations()">Registrations</li>
+        <li onclick="loadFoods()" class="mb-4 cursor-pointer hover:text-yellow-400">Food Menu</li>
+        <li onclick="loadOrders()" class="mb-4 cursor-pointer hover:text-orange-400">Food Orders</li>
+        <li class="text-sm text-yellow-400 cursor-pointer hover:text-yellow-300" onclick="toggleFoodForm()">+ Add Food</li>
+        <li class="mt-6 text-sm text-green-400 cursor-pointer hover:text-green-300"onclick="toggleCollegeForm()">+ Add College</li>
+        <li class="text-sm text-blue-400 cursor-pointer hover:text-blue-300" onclick="toggleEventForm()">+ Add Event</li>
+</div>
+
+<!-- 🟢 MAIN CONTENT -->
+<div class="flex-1 p-6 overflow-auto">
+
+    <!-- 🔷 STATS -->
+    <div class="grid grid-cols-3 gap-4 mb-6">
+
+        <div class="bg-white/20 p-5 rounded-xl text-white text-center">
+            <h3>Total Users</h3>
+            <p id="userCount" class="text-2xl font-bold">0</p>
+        </div>
+
+        <div class="bg-white/20 p-5 rounded-xl text-white text-center">
+            <h3>Events</h3>
+            <p id="eventCount" class="text-2xl font-bold">0</p>
+        </div>
+
+        <div class="bg-white/20 p-5 rounded-xl text-white text-center">
+            <h3>Colleges</h3>
+            <p id="collegeCount" class="text-2xl font-bold">0</p>
+        </div>
+
+    </div>
+
+    <!-- 🔷 FORMS -->
+    <div id="formContainer" class="flex gap-6 mb-6">
+
+        <!-- College Form -->
+        <div id="collegeForm"
+        class="hidden w-1/3 bg-white/20 backdrop-blur-xl p-4 rounded-xl text-white">
+
+            <h2 class="text-lg font-semibold mb-3">Add College</h2>
+
+            <input id="collegeName" placeholder="College Name"
+            class="w-full p-2 mb-2 rounded text-black">
+
+            <input id="collegeCity" placeholder="City"
+            class="w-full p-2 mb-3 rounded text-black">
+
+            <button onclick="addCollege()"
+            class="w-full bg-green-500 py-2 rounded hover:bg-green-600">
+            Submit
+            </button>
+        </div>
+
+        <!-- Event Form -->
+        <div id="eventForm"
+        class="hidden w-1/3 bg-white/20 backdrop-blur-xl p-4 rounded-xl text-white">
+
+            <h2 class="text-lg font-semibold mb-3">Add Event</h2>
+
+            <input id="eventName" placeholder="Event Name"
+            class="w-full p-2 mb-2 rounded text-black">
+
+            <input id="eventDate" type="date"
+            class="w-full p-2 mb-2 rounded text-black">
+
+            <input id="eventTime" type="time"
+            class="w-full p-2 mb-2 rounded text-black">
+
+            <input id="eventVenue" placeholder="Venue"
+            class="w-full p-2 mb-3 rounded text-black">
+
+            <button onclick="addEvent()"
+            class="w-full bg-blue-500 py-2 rounded hover:bg-blue-600">
+            Submit
+            </button>
+        </div>
+
+    </div>
+
+    <!-- 🔷 TABLE -->
+    <div class="bg-white/10 p-4 rounded-xl">
+        <h1 id="title" class="text-2xl font-bold mb-4 text-white">Dashboard</h1>
+
+        <div class="overflow-auto max-h-[500px]">
+            <table class="min-w-full bg-white/80 rounded-xl">
+                <thead id="tableHead" class="bg-blue-600 text-white sticky top-0"></thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="foodForm"
+class="hidden w-1/3 bg-white/20 backdrop-blur-xl p-4 rounded-xl text-white">
+
+    <h2 class="text-lg font-semibold mb-3">Add Food</h2>
+
+    <input id="foodName" placeholder="Food Name"
+    class="w-full p-2 mb-2 rounded text-black">
+
+    <input id="foodPrice" type="number" placeholder="Price"
+    class="w-full p-2 mb-2 rounded text-black">
+
+    <input id="foodDesc" placeholder="Description"
+    class="w-full p-2 mb-3 rounded text-black">
+
+    <button onclick="addFood()"
+    class="w-full bg-yellow-500 py-2 rounded hover:bg-yellow-600">
+    Add Food
+    </button>
+
+</div>
+
+</div>
+
+<script>
+
+const BASE_URL = "http://localhost:1901";
+
+if (localStorage.getItem("role") !== "ADMIN") {
+    alert("Access Denied");
+    window.location.href = "login.html";
+}
+
+function loadStats() {
+
+    fetch(BASE_URL + "/admin/users")
+    .then(res => res.json())
+    .then(data => document.getElementById("userCount").innerText = data.length)
+    .catch(err => console.log(err));
+
+    fetch(BASE_URL + "/user/events")
+    .then(res => res.json())
+    .then(data => document.getElementById("eventCount").innerText = data.length)
+    .catch(err => console.log(err));
+
+    fetch(BASE_URL + "/colleges")
+    .then(res => res.json())
+    .then(data => document.getElementById("collegeCount").innerText = data.length)
+    .catch(err => console.log(err));
+}
+
+function loadUsers() {
+    document.getElementById("title").innerText = "Users";
+
+    fetch(BASE_URL + "/admin/users")
+    .then(res => res.json())
+    .then(data => {
+
+        document.getElementById("tableHead").innerHTML = `
+        <tr>
+            <th class="p-2">Name</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Role</th>
+            <th>College</th>
+        </tr>`;
+
+        let rows = "";
+
+        data.forEach(user => {
+            rows += `
+            <tr class="border-b hover:bg-gray-100">
+                <td class="p-2">${user.name}</td>
+                <td>${user.email}</td>
+                <td>${user.phone}</td>
+                <td>${user.role}</td>
+                <td>${user.college ? user.college.name : "N/A"}</td>
+            </tr>`;
+        });
+
+        document.getElementById("tableBody").innerHTML = rows;
+    });
+}
+
+function loadEvents() {
+    document.getElementById("title").innerText = "Events";
+
+    fetch(BASE_URL + "/user/events")
+    .then(res => res.json())
+    .then(data => {
+
+        document.getElementById("tableHead").innerHTML = `
+        <tr>
+            <th class="p-2">Event Name</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Location</th>
+        </tr>`;
+
+        let rows = "";
+
+        data.forEach(event => {
+            rows += `
+            <tr class="border-b hover:bg-gray-100">
+                <td class="p-2">${event.eventName}</td>
+                <td>${event.date}</td>
+                <td>${event.time}</td>
+                <td>${event.venue}</td>
+            </tr>`;
+        });
+
+        document.getElementById("tableBody").innerHTML = rows;
+    });
+}
+
+function loadColleges() {
+    document.getElementById("title").innerText = "Colleges";
+
+    fetch(BASE_URL + "/colleges")
+    .then(res => res.json())
+    .then(data => {
+
+        document.getElementById("tableHead").innerHTML = `
+        <tr>
+            <th class="p-2">College Name</th>
+            <th>City</th>
+        </tr>`;
+
+        let rows = "";
+
+        data.forEach(college => {
+            rows += `
+            <tr class="border-b hover:bg-gray-100">
+                <td class="p-2">${college.name}</td>
+                <td>${college.city}</td>
+            </tr>`;
+        });
+
+        document.getElementById("tableBody").innerHTML = rows;
+    });
+}
+
+function loadRegistrations() {
+    document.getElementById("title").innerText = "Registrations";
+
+    fetch(BASE_URL + "/register")
+    .then(res => res.json())
+    .then(data => {
+
+        document.getElementById("tableHead").innerHTML = `
+        <tr>
+            <th>User</th>
+            <th>Event</th>
+            <th>Status</th>
+        </tr>`;
+
+        let rows = "";
+
+        data.forEach(reg => {
+            rows += `
+            <tr class="border-b hover:bg-gray-100">
+                <td>${reg.user?.name}</td>
+                <td>${reg.event.eventName}</td>
+                <td>${reg.status}</td>
+            </tr>`;
+        });
+
+        document.getElementById("tableBody").innerHTML = rows;
+    });
+}
+
+function addCollege() {
+    fetch(BASE_URL + "/colleges", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            name: document.getElementById("collegeName").value,
+            city: document.getElementById("collegeCity").value
+        })
+    })
+    .then(() => {
+        alert("College added ✅");
+        loadColleges();
+    });
+}
+
+function addEvent() {
+    fetch(BASE_URL + "/user/events", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            eventName: document.getElementById("eventName").value,
+            date: document.getElementById("eventDate").value,
+            time: document.getElementById("eventTime").value,
+            venue: document.getElementById("eventVenue").value
+        })
+    })
+    .then(() => {
+
+        alert("Event added ✅");
+        loadEvents();
+    });
+}
+
+function toggleCollegeForm() {
+    document.getElementById("collegeForm").classList.toggle("hidden");
+    document.getElementById("eventForm").classList.add("hidden");
+}
+
+function toggleEventForm() {
+    document.getElementById("eventForm").classList.toggle("hidden");
+    document.getElementById("collegeForm").classList.add("hidden");
+}
+
+function addFood() {
+    fetch(BASE_URL + "/foods", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            foodName: document.getElementById("foodName").value,
+            price: document.getElementById("foodPrice").value,
+            type: document.getElementById("foodDesc").value
+        })
+    })
+    .then(() => {
+        alert("Food added");
+        loadFoods();
+    });
+}
+
+function loadFoods() {
+    document.getElementById("title").innerText = "Food Menu";
+
+    fetch(BASE_URL + "/foods")
+    .then(res => res.json())
+    .then(data => {
+
+        document.getElementById("tableHead").innerHTML = `
+        <tr>
+            <th>Name</th>
+            <th>Price</th>
+            <th>Description</th>
+            <th>Action</th>
+        </tr>`;
+
+        let rows = "";
+
+        data.forEach(food => {
+            rows += `
+            <tr class="border-b hover:bg-gray-100">
+                <td>${food.foodName}</td>
+                <td>${food.price}</td>
+                <td>${food.description}</td>
+                <td>
+                    <button onclick="orderFood(${food.id})"
+                    class="bg-green-500 px-2 py-1 rounded text-white">
+                    Order
+                    </button>
+                </td>
+            </tr>`;
+        });
+
+        document.getElementById("tableBody").innerHTML = rows;
+    });
+}
+
+function loadOrders() {
+    document.getElementById("title").innerText = "Food Orders";
+
+    fetch(BASE_URL + "/orders")
+    .then(res => res.json())
+    .then(data => {
+
+        document.getElementById("tableHead").innerHTML = `
+        <tr>
+            <th>User</th>
+            <th>Food</th>
+            <th>Quantity</th>
+            <th>Status</th>
+        </tr>`;
+
+        let rows = "";
+
+        data.forEach(order => {
+            rows += `
+            <tr class="border-b">
+                <td>${order.user?.name}</td>
+                <td>${order.food?.foodName}</td>
+                <td>${order.quantity}</td>
+                <td>${order.status}</td>
+            </tr>`;
+        });
+
+        document.getElementById("tableBody").innerHTML = rows;
+    });
+}
+
+function toggleFoodForm() {
+    document.getElementById("foodForm").classList.toggle("hidden");
+    document.getElementById("collegeForm").classList.add("hidden");
+    document.getElementById("eventForm").classList.add("hidden");
+}
+
+setInterval(() => {
+    if (document.getElementById("title").innerText === "Food Orders") {
+        loadOrders();
+    }
+}, 5000); // refresh every 5 seconds
+
+loadUsers();
+loadStats();
+
+</script>
+
+</body>
+</html>

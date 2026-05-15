@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Payment</title>
+    <style>
+        body {
+            font-family: Arial;
+            padding: 20px;
+            background-color: #f5f5f5; /* simple light background */
+        }
+
+        h2, h3 {
+            color: #333;
+        }
+
+        .box {
+            background-color: white; /* clean like form sections */
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: green;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Payment</h2>
+
+<h3 id="foodName"></h3>
+
+<br><br>
+
+<label>Total Amount:</label>
+<input type="text" id="amount" readonly>
+
+<br><br>
+
+<!-- PAYMENT METHOD -->
+<div class="box">
+    <h3>Select Payment Method</h3>
+
+    <input type="radio" name="payment" value="upi" checked> UPI  
+    <input type="radio" name="payment" value="card"> Card
+</div>
+
+<!-- UPI SECTION -->
+<div id="upiSection" class="box">
+    <h3>Pay via UPI</h3>
+    <input type="text" id="upiId" placeholder="Enter UPI ID (example@upi)">
+</div>
+
+<!-- CARD SECTION -->
+<div id="cardSection" class="box" style="display:none;">
+    <h3>Pay via Card</h3>
+    <input type="text" placeholder="Card Number"><br><br>
+    <input type="text" placeholder="Expiry (MM/YY)"><br><br>
+    <input type="text" placeholder="CVV">
+</div>
+
+<button onclick="payNow()">Pay Now</button>
+
+<script>
+
+// LOAD FOOD DATA
+const foodName = localStorage.getItem("foodName");
+const foodImage = localStorage.getItem("foodImage");
+
+document.getElementById("foodName").innerText = foodName;
+document.getElementById("foodImage").src = foodImage;
+
+// SET AMOUNT
+let qty = localStorage.getItem("qty") || 1;
+let price = 100;
+document.getElementById("amount").value = qty * price;
+
+// SWITCH PAYMENT UI
+const radios = document.getElementsByName("payment");
+
+radios.forEach(radio => {
+    radio.addEventListener("change", function() {
+        if (this.value === "upi") {
+            document.getElementById("upiSection").style.display = "block";
+            document.getElementById("cardSection").style.display = "none";
+        } else {
+            document.getElementById("upiSection").style.display = "none";
+            document.getElementById("cardSection").style.display = "block";
+        }
+    });
+});
+
+function payNow() {
+    const method = document.querySelector('input[name="payment"]:checked').value;
+
+    if (method === "upi") {
+        const upi = document.getElementById("upiId").value;
+        if (!upi) {
+            alert("Enter UPI ID");
+            return;
+        }
+    }
+
+    alert("Payment Successful ✅");
+
+    localStorage.clear();
+
+    window.location.href = "user.html";
+}
+
+</script>
+
+</body>
+</html>

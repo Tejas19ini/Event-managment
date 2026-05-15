@@ -1,0 +1,236 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gradient-to-r from-purple-500 to-pink-500 min-h-screen flex">
+
+<!-- 🔹 Sidebar -->
+<div class="w-64 bg-black/40 backdrop-blur-xl text-white p-5 shadow-2xl">
+    <h2 class="text-2xl font-bold mb-6">User Panel</h2>
+
+    <ul>
+        <li class="mb-4 cursor-pointer hover:text-yellow-400" onclick="loadEvents()">View Events</li>
+        <li class="mb-4 cursor-pointer hover:text-yellow-400" onclick="loadMyRegistrations()">My Registrations</li>
+    </ul>
+
+    <li onclick="loadFoods()" class="mb-4 cursor-pointer hover:text-yellow-400">Food Menu</li>
+
+<li onclick="loadOrders()" class="mb-4 cursor-pointer hover:text-orange-400">Food Orders</li>
+
+<button><li class="mt-10 text-red-400 cursor-pointer hover:text-red-300"
+    onclick="logout()">Logout</li></button>
+
+
+
+</div>
+
+<!-- 🔹 Main Content -->
+<div class="flex-1 p-8">
+
+    <h1 class="text-3xl text-white font-bold mb-6">Welcome User</h1>
+
+    <!-- Table -->
+    <div class="bg-white rounded-xl shadow overflow-hidden">
+        <table class="w-full text-left">
+            <thead id="tableHead" class="bg-indigo-500 text-white"></thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+
+</div>
+
+<script>
+
+const BASE_URL = "http://localhost:1901";
+
+// 🔒 Protect User Page
+if (localStorage.getItem("role") !== "USER") {
+    alert("Access Denied");
+    window.location.href = "login.html";
+}
+
+const userId = localStorage.getItem("userId");
+
+// ================= LOAD EVENTS =================
+function loadEvents() {
+    fetch(BASE_URL + "/user/events")
+    .then(res => res.json())
+    .then(data => {
+
+        document.getElementById("tableHead").innerHTML = `
+            <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Venue</th>
+                <th>Action</th>
+            </tr>
+        `;
+
+        let rows = "";
+
+        data.forEach(event => {
+            rows += `
+            <tr class="border-b hover:bg-gray-100">
+                <td>${event.eventName}</td>
+                <td>${event.eventType}</td>
+                <td>${event.date}</td>
+                <td>${event.time}</td>
+                <td>${event.venue}</td>
+                <td>
+                    <button onclick="goToRegister(${event.eventId})"
+                        class="bg-green-500 text-white px-3 py-1 rounded">
+                        Register
+                    </button>
+                </td>
+            </tr>
+            `;
+        });
+
+        document.getElementById("tableBody").innerHTML = rows;
+    });
+}
+
+// ================= REDIRECT TO REGISTER PAGE =================
+function goToRegister(eventId) {
+    localStorage.setItem("selectedEvent", eventId);
+    window.location.href = "register.html";
+}
+
+// ================= MY REGISTRATIONS =================
+function loadMyRegistrations() {
+
+    fetch(BASE_URL + "/registrations/user/" + userId)
+    .then(res => res.json())
+    .then(data => {
+
+        console.log(data); // debug
+
+        document.getElementById("tableHead").innerHTML = `
+            <tr>
+                <th>Event</th>
+                <th>Status</th>
+            </tr>
+        `;
+
+        let rows = "";
+
+        data.forEach(reg => {
+            rows += `
+            <tr class="border-b hover:bg-gray-100">
+                <td>${reg.event?.eventName || "N/A"}</td>
+                <td>${reg.status}</td>
+            </tr>
+            `;
+        });
+
+        document.getElementById("tableBody").innerHTML = rows;
+    });
+}
+
+// ================= LOAD FOOD =================
+function loadFoods() {
+
+    fetch(BASE_URL + "/food")   // ✅ FIXED
+    .then(res => res.json())
+    .then(data => {
+
+        document.getElementById("tableHead").innerHTML = `
+        <tr>
+            <th>Name</th>
+            <th>Price</th>
+            <th>Description</th>
+            <th>Action</th>
+        </tr>`;
+
+        let rows = "";
+
+        data.forEach(food => {
+            rows += `
+            <tr class="border-b hover:bg-gray-100">
+                <td>${food.foodName}</td>
+                <td>₹${food.price}</td>
+                <td>${food.foodDescription}</td>
+                <td>
+                    <button onclick="goToOrder(${food.id})"
+                    class="bg-green-500 px-2 py-1 rounded text-white">
+                    Order
+                    </button>
+                </td>
+            </tr>`;
+        });
+
+        document.getElementById("tableBody").innerHTML = rows;
+    });
+}
+
+function goToOrder(foodId) {
+    localStorage.setItem("selectedFood", foodId);
+    window.location.href = "order.html";
+}
+
+// ================= ORDER FOOD =================
+function orderFood(foodId) {
+    fetch(BASE_URL + "/orders", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            foodId: foodId,
+            quantity: 1
+        })
+    })
+    .then(() => {
+        alert("Food booked 🍽️");
+    });
+}
+
+function loadOrders() {
+
+    fetch(BASE_URL + "/orders") // make sure backend exists
+    .then(res => {
+        if (!res.ok) throw new Error("API error");
+        return res.json();
+    })
+    .then(data => {
+
+        document.getElementById("tableHead").innerHTML = `
+        <tr>
+            <th>Food</th>
+            <th>Quantity</th>
+            <th>Status</th>
+        </tr>`;
+
+        let rows = "";
+
+        data.forEach(order => {
+            rows += `
+            <tr class="border-b hover:bg-gray-100">
+                <td>${order.food?.foodName || "N/A"}</td>
+                <td>${order.quantity}</td>
+                <td>${order.status || "Ordered"}</td>
+            </tr>`;
+        });
+
+        document.getElementById("tableBody").innerHTML = rows;
+    });
+}
+
+// ================= LOGOUT =================
+function logout() {
+    localStorage.clear();
+    window.location.href = "login.html";
+}
+
+// Load events by default
+loadEvents();
+
+</script>
+</body>
+</html>
+```

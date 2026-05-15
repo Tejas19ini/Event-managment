@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Register Event</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gradient-to-r from-purple-500 to-pink-500 min-h-screen flex items-center justify-center">
+
+<div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+
+    <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">
+        🎉 Event Registration
+    </h2>
+
+    <!-- FORM -->
+    <div class="space-y-4">
+
+        <input id="name" type="text" placeholder="Your Name"
+            class="w-full border p-2 rounded-lg">
+
+        <input id="email" type="email" placeholder="Email"
+            class="w-full border p-2 rounded-lg">
+
+        <input id="phone" type="text" placeholder="Phone Number"
+            class="w-full border p-2 rounded-lg">
+
+        <!-- OTP -->
+        <div class="flex gap-2">
+            <input id="otp" type="text" placeholder="Enter OTP"
+                class="flex-1 border p-2 rounded-lg">
+
+            <button onclick="sendOTP()"
+                class="bg-blue-500 text-white px-3 rounded-lg">
+                Send OTP
+            </button>
+        </div>
+
+        <!-- Confirm -->
+        <button onclick="register()"
+            class="w-full bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg">
+            Confirm Registration
+        </button>
+
+        <!-- Back -->
+        <button onclick="goBack()"
+            class="w-full bg-gray-400 hover:bg-gray-500 text-white py-2 rounded-lg">
+            Back
+        </button>
+
+    </div>
+
+</div>
+
+<script>
+
+const BASE_URL = "http://localhost:1901";
+
+// ================= OTP SIMULATION =================
+let generatedOtp;
+
+function sendOTP() {
+    const phone = document.getElementById("phone").value;
+
+    generatedOtp = Math.floor(100000 + Math.random() * 900000);
+
+    console.log("OTP is:", generatedOtp);
+
+    // ✅ ADD THIS LINE (VERY IMPORTANT)
+    localStorage.setItem("otp", generatedOtp);
+
+    alert("OTP sent");
+}
+
+// ================= REGISTER =================
+function register() {
+
+    const name = document.getElementById("name").value;
+    const email = document.getElementById("email").value;
+    const phone = document.getElementById("phone").value;
+    const otp = document.getElementById("otp").value;
+
+    const savedOtp = localStorage.getItem("otp");
+
+    if (!name || !email || !phone || !otp) {
+        alert("Please fill all fields");
+        return;
+    }
+
+    if (otp !== savedOtp) {
+        alert("Invalid OTP ❌");
+        return;
+    }
+
+    const eventId = localStorage.getItem("selectedEvent");
+    const userId = localStorage.getItem("userId");
+
+   fetch("http://localhost:1901/registrationss", {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+        user: { userId: userId },
+        event: { eventId: eventId }
+    })
+})
+.then(res => {
+    if (!res.ok) throw new Error("Failed");
+    return res.json();
+})
+.then(() => {
+    alert("Registered successfully 🎉");
+})
+.catch(() => {
+    alert("Registration failed ❌");
+});
+}
+
+// ================= BACK =================
+function goBack() {
+    window.location.href = "users.html";
+}
+
+</script>
+
+</body>
+</html>
